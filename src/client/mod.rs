@@ -2222,6 +2222,17 @@ impl Session<Playing> {
             _ => {}
         }
 
+        // An ugly hack to not trip over some cameras
+        if response.status() == rtsp_types::StatusCode::BadRequest {
+            match inner.keepalive_state {
+                KeepaliveState::Waiting { cseq: _, method: _ } => {
+                    *inner.keepalive_state = KeepaliveState::Idle;
+                },
+                _ => {}
+            }
+            return Ok(());
+        }
+
         // The only response we expect in this state is to our keepalive request.
         bail!(ErrorInt::RtspFramingError {
             conn_ctx: *inner
